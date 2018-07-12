@@ -14,7 +14,7 @@
     <attr name="displayFlag"          xs:type="integer"  readonly="false" other:xPath="displayFlag"           />
     <attr name="displaySequence"      xs:type="integer"  readonly="false" other:xPath="displaySequence"       />
     <attr name="division"             xs:type="integer"  readonly="false" other:xPath="division"              />
-    <attr name="groupCode"            xs:type="integer"  readonly="false" other:xPath="groupCode"             />
+    <attr name="groupCode"            xs:type="string"  readonly="false" other:xPath="groupCode"             />
     <attr name="insDateTime"          xs:type="datetime" readonly="false" other:xPath="insDateTime"           />
     <attr name="pointNotApplicable"   xs:type="integer"  readonly="false" other:xPath="pointNotApplicable"    />
     <attr name="price"                xs:type="integer"  readonly="false" other:xPath="price"                 />
