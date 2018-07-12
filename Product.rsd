@@ -1,0 +1,106 @@
+<rsb:script xmlns:rsb="http://www.rssbus.com/ns/rsbscript/2" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <rsb:info title="Product" desc="Generated schema file." xmlns:other="http://www.rssbus.com/ns/rsbscript/2/other">
+
+    <!-- Jsonから抽出するカラムを指定します。Nameには実際にODBC経由で取得した際のカラム名を指定し、other:xPathにはJsonのカラム名を指定します。 -->
+    <attr name="appStartDateTime"     xs:type="datetime"  readonly="false" other:xPath="appStartDateTime"      />
+    <attr name="attribute"            xs:type="string"  readonly="false" other:xPath="attribute"             />
+    <attr name="catchCopy"            xs:type="string"  readonly="false" other:xPath="catchCopy"             />
+    <attr name="categoryId"           xs:type="string"  readonly="false" other:xPath="categoryId"            />
+    <attr name="color"                xs:type="string"   readonly="false" other:xPath="color"                 />
+    <attr name="cost"                 xs:type="double"   readonly="false" other:xPath="cost"                  />
+    <attr name="customerPrice"        xs:type="integer"  readonly="false" other:xPath="customerPrice"         />
+    <attr name="description"          xs:type="string"  readonly="false" other:xPath="description"           />
+    <attr name="displayFlag"          xs:type="integer"  readonly="false" other:xPath="displayFlag"           />
+    <attr name="displaySequence"      xs:type="integer"  readonly="false" other:xPath="displaySequence"       />
+    <attr name="division"             xs:type="integer"  readonly="false" other:xPath="division"              />
+    <attr name="groupCode"            xs:type="integer"  readonly="false" other:xPath="groupCode"             />
+    <attr name="insDateTime"          xs:type="datetime" readonly="false" other:xPath="insDateTime"           />
+    <attr name="pointNotApplicable"   xs:type="integer"  readonly="false" other:xPath="pointNotApplicable"    />
+    <attr name="price"                xs:type="integer"  readonly="false" other:xPath="price"                 />
+    <attr name="productCode"          xs:type="double"   readonly="false" other:xPath="productCode"           />
+    <attr name="productId"            xs:type="integer"  readonly="false" other:xPath="productId"             />
+    <attr name="productKana"          xs:type="string"  readonly="false" other:xPath="productKana"           />
+    <attr name="productName"          xs:type="string"   readonly="false" other:xPath="productName"           />
+    <attr name="productOptionGroupId" xs:type="string"  readonly="false" other:xPath="productOptionGroupId"  />
+    <attr name="productPriceDivision" xs:type="integer"  readonly="false" other:xPath="productPriceDivision"  />
+    <attr name="salesDivision"        xs:type="integer"  readonly="false" other:xPath="salesDivision"         />
+    <attr name="size"                 xs:type="string"   readonly="false" other:xPath="size"                  />
+    <attr name="staffDiscountRate"    xs:type="integer"  readonly="false" other:xPath="staffDiscountRate"     />
+    <attr name="stockControlDivision" xs:type="integer"  readonly="false" other:xPath="stockControlDivision"  />
+    <attr name="supplierProductNo"    xs:type="string"  readonly="false" other:xPath="supplierProductNo"     />
+    <attr name="tag"                  xs:type="string"  readonly="false" other:xPath="tag"                   />
+    <attr name="taxDivision"          xs:type="integer"  readonly="false" other:xPath="taxDivision"           />
+    <attr name="taxFreeDivision"      xs:type="integer"  readonly="false" other:xPath="taxFreeDivision"       />
+    <attr name="updDateTime"          xs:type="datetime" readonly="false" other:xPath="updDateTime"           />
+    <attr name="url"                  xs:type="string"  readonly="false" other:xPath="url"                   />
+
+  </rsb:info>
+
+  <!-- rsb:setには2種類の役割が存在します。一つは変数の定義。もう一つは、特定の役割へのパラメータセットです。 -->
+  <!-- RepeatElement変数には、取得するJsonを分割するための配列の位置情報を指定する役割があります。 -->
+  <rsb:set attr="RepeatElement" value="/result" />
+
+  <!-- enablepaging変数で、ページング設定の有効化を指定します。 -->
+  <rsb:set attr="enablepaging" value="TRUE" />
+
+  <!-- ページングURLを指定するためのCOUNT変数　def(0)で初回リクエスト時にrows@nextが定義されていない場合に、0を設定し、add()にてインクリメントを実行しています。　 -->
+  <rsb:set  attr="count" value="[rows@next | def('0') | add()]" />
+
+  <rsb:set  attr="limit" value="100" />
+
+  <!-- リクエストURI COUNTの初期値は上記でインクリメント　 -->
+  <rsb:set  attr="proc_name" value="product_ref" />
+  <rsb:set  attr="table_name" value="Product" />
+  <rsb:set  attr="uri"  value="https://webapi.smaregi.jp/access/" />
+
+  <rsb:set attr="header:name" value="accept"/>
+  <rsb:set attr="header:value" value=" application/json"/>
+
+  <rsb:set attr="Header:Name#2" value="Content-Type"/>
+  <rsb:set attr="Header:Value#2" value="application/x-www-form-urlencoded"/>
+
+  <!-- 契約IDとアクセストークンは接続文字列で指定します。-->
+  <rsb:set attr="header:name#3" value="X_contract_id"/>
+  <rsb:set attr="header:value#3" value="[_connection.contract_id]"/>
+
+  <rsb:set attr="header:name#4" value="X_access_token"/>
+  <rsb:set attr="header:value#4" value="[_connection.access_token]"/>
+
+  <rsb:script method="GET">
+
+    <rsb:set attr="method" value="POST"/>
+    <rsb:set attr="encodepostdata" value="false" />
+    <rsb:set attr="data">proc_name=[proc_name]&params={"limit":[limit], "page":[count], "table_name":"[table_name]" }</rsb:set>
+
+    <rsb:call op="jsonproviderGet">
+       <rsb:set attr="rows@next" value="[count]" />
+       <rsb:push/>
+    </rsb:call>
+  </rsb:script>
+
+  <rsb:script method="POST">
+    <rsb:set attr="method" value="POST"/>
+    <rsb:call op="jsonproviderGet">
+      <rsb:throw code="500" desc="Inserts are not currently supported."/>
+      <rsb:push/>
+    </rsb:call>
+  </rsb:script>
+
+  <rsb:script method="MERGE">
+    <rsb:set attr="method" value="PUT"/>
+    <rsb:call op="jsonproviderGet">
+      <rsb:throw code="500" desc="Updates are not currently supported."/>
+      <rsb:push/>
+    </rsb:call>
+  </rsb:script>
+
+  <rsb:script method="DELETE">
+    <rsb:set attr="method" value="DELETE"/>
+    <rsb:call op="jsonproviderGet">
+      <rsb:throw code="500" desc="Deletes are not currently supported."/>
+      <rsb:push/>
+    </rsb:call>
+  </rsb:script>
+
+</rsb:script>
