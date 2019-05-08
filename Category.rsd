@@ -3,9 +3,9 @@
   <rsb:info title="Category" desc="Generated schema file." xmlns:other="http://www.rssbus.com/ns/rsbscript/2/other">
 
     <!-- Jsonから抽出するカラムを指定します。Nameには実際にODBC経由で取得した際のカラム名を指定し、other:xPathにはJsonのカラム名を指定します。 -->
-    <attr name="categoryId"             xs:type="string"  readonly="false" other:xPath="categoryId"      />
+    <attr name="categoryId"             xs:type="string"  readonly="false" other:xPath="categoryId"  key="true"    />
     <attr name="categoryCode"           xs:type="string"   readonly="false" other:xPath="categoryCode"             />
-    <attr name="categoryName"           xs:type="string"   readonly="false" other:xPath="categoryName"             />
+    <attr name="categoryName"           xs:type="string"   readonly="false" other:xPath="categoryName"           />
     <attr name="categoryAbbr"           xs:type="string"   readonly="false" other:xPath="categoryAbbr"            />
     <attr name="displaySequence"        xs:type="string"   readonly="false" other:xPath="displaySequence"                 />
     <attr name="displayFlag"            xs:type="string"   readonly="false" other:xPath="displayFlag"                  />
@@ -29,12 +29,16 @@
 
   <!-- ページングURLを指定するためのCOUNT変数　def(0)で初回リクエスト時にrows@nextが定義されていない場合に、0を設定し、add()にてインクリメントを実行しています。　 -->
   <rsb:set  attr="count" value="[rows@next | def('0') | add()]" />
-
-  <rsb:set  attr="limit" value="100" />
+  <rsb:set  attr="limit" value="1000" />
 
   <!-- リクエストURI COUNTの初期値は上記でインクリメント　 -->
-  <rsb:set  attr="proc_name" value="category_ref" />
+  <rsb:set  attr="proc_ref_name" value="category_ref" />
+  <rsb:set  attr="proc_upd_name" value="category_upd" />
   <rsb:set  attr="table_name" value="Category" />
+
+  <rsb:set  attr="update_keys" value="categoryId" />
+  <rsb:set  attr="delete_keys" value="categoryId" />
+
   <rsb:set  attr="uri"  value="https://webapi.smaregi.jp/access/" />
 
   <rsb:set attr="header:name" value="accept"/>
@@ -50,40 +54,127 @@
   <rsb:set attr="header:name#4" value="X_access_token"/>
   <rsb:set attr="header:value#4" value="[_connection.access_token]"/>
 
+  <!-- POST Data のエンコード設定 -->
+  <rsb:set attr="encodepostdata" value="false" />
+
+
+  <!-- SELECT 処理 -->
+  <!-- 
+  [Sample Query]
+  select * from Category;
+   -->
+
   <rsb:script method="GET">
 
     <rsb:set attr="method" value="POST"/>
-    <rsb:set attr="encodepostdata" value="false" />
-    <rsb:set attr="data">proc_name=[proc_name]&params={"limit":[limit], "page":[count], "table_name":"[table_name]" }</rsb:set>
+    <rsb:set attr="data">proc_name=[proc_ref_name]&params={"limit":[limit], "page":[count], "table_name":"[table_name]" }</rsb:set>
 
     <rsb:call op="jsonproviderGet">
        <rsb:set attr="rows@next" value="[count]" />
        <rsb:push/>
     </rsb:call>
   </rsb:script>
+  <!-- SELECT 処理 -->
+
+
+  <!-- Insert 処理 -->
+  <!-- 
+  [Sample Query]
+  insert into Category(categoryId,categoryCode,categoryName) values('888888','888888','888888Hello');
+
+  ※ポスレジはAPI仕様として、Keyが存在すればUpdate、存在しなければInsert処理を行います。
+  このInsertを実行した際に、すでにポスレジに同一Keyが存在する場合は、Updateが行われるため、注意してください。
+   -->
 
   <rsb:script method="POST">
+    <!-- 格納するための変数を定義 -->
+    <rsb:set attr="_input.json" value="def"/>
+
+    <!-- Insertで指定されたカラムを取得 -->
+    <rsb:enum list="[_query.selectcolumns]" separator=",">
+
+      <!-- 初期状態のカラムは[coulmnname]の状態のため、[]を削除 -->
+      <rsb:set attr="base" value="[_value | replace('\[','') | replace('\]','')]" />
+      
+      <rsb:if attr="_input.json" value="def" operator="equals">
+        <rsb:else>
+          <rsb:set attr="_input.json" value='[_input.json], "[base]" : "[_input.[base]]"' />
+        </rsb:else>
+        <rsb:set attr="_input.json" value='"[base]" : "[_input.[base]]"' />
+      </rsb:if>
+    </rsb:enum>
+
+    <rsb:set attr="data">proc_name=[proc_upd_name]&params={"proc_info":{"proc_division":"U" },"data":\[{ "table_name":"[table_name]", "rows":\[ {[_input.json]} \] }\]}</rsb:set>  
     <rsb:set attr="method" value="POST"/>
+
     <rsb:call op="jsonproviderGet">
-      <rsb:throw code="500" desc="Inserts are not currently supported."/>
       <rsb:push/>
     </rsb:call>
   </rsb:script>
+  <!-- Insert 処理 -->
+
+  <!-- Update 処理 -->
+  <!-- 
+  [Sample Query]
+  update Category set  categoryName = 'Update Category Name',categoryAbbr = 'Update Category Abbr' where categoryId = '888888';
+   -->
 
   <rsb:script method="MERGE">
-    <rsb:set attr="method" value="PUT"/>
+    <rsb:set attr="_input.json" value="def"/>
+    
+    <!-- Update set で指定されたカラムを取得 -->
+    <rsb:enum list="[_query.selectcolumns]" separator=",">
+
+      <!-- 初期状態のカラムは[coulmnname]の状態のため、[]を削除 -->
+      <rsb:set attr="base" value="[_value | replace('\[','') | replace('\]','')]" />
+      <rsb:if attr="_input.json" value="def" operator="equals">
+        <rsb:else>
+          <rsb:set attr="_input.json" value='[_input.json], "[base]" : "[_input.[base]]"' />
+        </rsb:else>
+        <rsb:set attr="_input.json" value='"[base]" : "[_input.[base]]"' />
+      </rsb:if>
+    </rsb:enum>
+
+    <rsb:enum list="[update_keys]" separator=",">
+      <!-- Keyの情報を追加 -->
+      <rsb:set attr="_input.json" value='[_input.json], "[_value]" : "[_input.[_value]]"' />
+    </rsb:enum>
+
+    <rsb:set attr="data">proc_name=[proc_upd_name]&params={"proc_info":{"proc_division":"U" },"data":\[{ "table_name":"[table_name]", "rows":\[ {[_input.json]} \] }\]}</rsb:set>  
+    <rsb:set attr="method" value="POST"/>
     <rsb:call op="jsonproviderGet">
-      <rsb:throw code="500" desc="Updates are not currently supported."/>
       <rsb:push/>
     </rsb:call>
   </rsb:script>
+  <!-- Update 処理 -->
 
+  <!-- Delete 処理 -->
+  <!-- 
+  [Sample Query]
+  Delete FROM Category where categoryId = '888888';
+   -->
   <rsb:script method="DELETE">
-    <rsb:set attr="method" value="DELETE"/>
+    
+    <rsb:set attr="_input.json" value="def"/>
+
+    <rsb:enum list="[delete_keys]" separator=",">
+
+      <rsb:if attr="_input.json" value="def" operator="equals">
+        <rsb:else>
+          <rsb:set attr="_input.json" value='[_input.json], "[_value]" : "[_input.[_value]]"' />
+        </rsb:else>
+      <rsb:set attr="_input.json" value='"[_value]" : "[_input.[_value]]"' />
+      </rsb:if>
+    </rsb:enum>
+
+    <rsb:set attr="data">proc_name=[proc_upd_name]&params={"proc_info":{"proc_division":"D" },"data":\[{ "table_name":"[table_name]", "rows":\[ {[_input.json]} \] }\]}</rsb:set>  
+    <rsb:set attr="method" value="POST"/>
+
     <rsb:call op="jsonproviderGet">
       <rsb:throw code="500" desc="Deletes are not currently supported."/>
       <rsb:push/>
     </rsb:call>
   </rsb:script>
+  <!-- Delete 処理 -->
 
 </rsb:script>

@@ -21,7 +21,9 @@
   <rsb:set  attr="limit" value="100" />
 
   <!-- TODO：テーブル名とプロシージャ名です。　 -->
-  <rsb:set  attr="proc_name" value="product_ref" />
+  <rsb:set  attr="proc_ref_name" value="product_ref" />
+  <rsb:set  attr="proc_upd_name" value="product_upd" />
+
   <rsb:set  attr="table_name" value="ProductStore" />
   <rsb:set  attr="uri"  value="https://webapi.smaregi.jp/access/" />
 
@@ -38,26 +40,53 @@
   <rsb:set attr="header:name#4" value="X_access_token"/>
   <rsb:set attr="header:value#4" value="[_connection.access_token]"/>
 
+  <!-- POST Data のエンコード設定 -->
+  <rsb:set attr="encodepostdata" value="false" />
+
+
+  <!-- SELECT 処理 -->
   <rsb:script method="GET">
 
     <rsb:set attr="method" value="POST"/>
-    <rsb:set attr="encodepostdata" value="false" />
-    <rsb:set attr="data">proc_name=[proc_name]&params={"limit":[limit], "page":[count], "table_name":"[table_name]" }</rsb:set>
+    <rsb:set attr="data">proc_name=[proc_ref_name]&params={"limit":[limit], "page":[count], "table_name":"[table_name]" }</rsb:set>
 
     <rsb:call op="jsonproviderGet">
        <rsb:set attr="rows@next" value="[count]" />
        <rsb:push/>
     </rsb:call>
   </rsb:script>
+  <!-- SELECT 処理 -->
 
+
+  <!-- INSERT 処理 -->
   <rsb:script method="POST">
+
+    <rsb:set attr="_input.json" value="def"/>
+
+    <!-- 繰り返しでInsertで指定されたカラムを取得 -->
+    <rsb:enum list="[_query.selectcolumns]" separator=",">
+
+      <!-- 初期状態のカラムは[coulmnname]の状態のため、[]を削除 -->
+      <rsb:set attr="base" value="[_value | replace('\[','') | replace('\]','')]" />
+      <rsb:if attr="_input.json" value="def" operator="equals">
+        <rsb:else>
+          <rsb:set attr="_input.json" value='[_input.json], "[base]" : "[_input.[base]]"' />
+        </rsb:else>
+        <rsb:set attr="_input.json" value='"[base]" : "[_input.[base]]"' />
+      </rsb:if>
+    </rsb:enum>
+
+    <rsb:set attr="data">proc_name=[proc_name]&params="proc_info":{"proc_division":"U" },"data":\[{ "table_name":"[table_name]", "rows":\[ [_input.json] \]}\]}</rsb:set>  
     <rsb:set attr="method" value="POST"/>
+
     <rsb:call op="jsonproviderGet">
-      <rsb:throw code="500" desc="Inserts are not currently supported."/>
       <rsb:push/>
     </rsb:call>
   </rsb:script>
+  <!-- INSERT 処理 -->
 
+  
+  <!-- UPDATE 処理 -->
   <rsb:script method="MERGE">
     <rsb:set attr="method" value="PUT"/>
     <rsb:call op="jsonproviderGet">
@@ -65,7 +94,9 @@
       <rsb:push/>
     </rsb:call>
   </rsb:script>
+  <!-- UPDATE 処理 -->
 
+  <!-- DELETE 処理 -->
   <rsb:script method="DELETE">
     <rsb:set attr="method" value="DELETE"/>
     <rsb:call op="jsonproviderGet">
@@ -73,5 +104,6 @@
       <rsb:push/>
     </rsb:call>
   </rsb:script>
+  <!-- DELETE 処理 -->
 
 </rsb:script>
